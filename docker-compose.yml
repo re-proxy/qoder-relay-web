@@ -1,0 +1,29 @@
+services:
+  relay:
+    build: .
+    image: painwind/qoder-relay-web:latest
+    container_name: qoder-relay-web
+    restart: unless-stopped
+    ports:
+      # 主监听：管理控制台 + 通用 /v1 网关
+      - "8317:8317"
+      # 内置反代（在设置页开启后生效）
+      - "7891:7891"
+      - "7892:7892"
+    environment:
+      RELAY_ADMIN_PASSWORD: ${RELAY_ADMIN_PASSWORD:?请在 .env 中设置管理密码}
+      RELAY_MASTER_KEY: ${RELAY_MASTER_KEY:?请用 docker run --rm qoder-relay-web keygen 生成后填入 .env}
+      RELAY_DEFAULT_EDITION: ${RELAY_DEFAULT_EDITION:-domestic}
+      RELAY_CHECKIN_ENABLED: ${RELAY_CHECKIN_ENABLED:-true}
+      RELAY_CHECKIN_HOUR: ${RELAY_CHECKIN_HOUR:-8}
+      RELAY_CHECKIN_MINUTE: ${RELAY_CHECKIN_MINUTE:-30}
+      RELAY_SECURE_COOKIE: ${RELAY_SECURE_COOKIE:-false}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8317/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
