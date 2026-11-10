@@ -43,7 +43,7 @@ docker compose up -d
 # 或者直接 docker run
 docker run -d --name qoder-relay-web \
   -p 8317:8317 -p 7891:7891 -p 7892:7892 \
-  -v "$PWD/data:/data" \
+  -v qoder-relay-data:/data \
   -e RELAY_ADMIN_PASSWORD=你的管理密码 \
   -e RELAY_MASTER_KEY=上一步输出的base64密钥 \
   painwind/qoder-relay-web:latest
@@ -51,7 +51,19 @@ docker run -d --name qoder-relay-web \
 
 打开 `http://主机:8317`，用管理密码登录。
 
+只想部署、不需要仓库其余部分时，用 `deploy/` 目录（稀疏检出约 5 KB，含 compose、
+`.env.example` 与部署说明）：
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/re-proxy/qoder-relay-web.git
+cd qoder-relay-web && git sparse-checkout set deploy && cd deploy
+cp .env.example .env && docker compose up -d
+```
+
 想从源码构建，用 `docker compose up -d --build`；只想拉官方镜像，用 `docker compose pull && docker compose up -d`。
+
+数据落在命名卷 `qoder-relay-data`（`state.enc` 属主 uid 10001）。若要改用宿主机目录挂载，
+先执行 `chown -R 10001:10001 <目录>`，否则容器会因权限不足反复重启。
 
 镜像标签：`latest`（main 分支）、`main`、`sha-<短提交>`、以及打 tag 时的 `v1.2.3` / `v1.2`。
 
@@ -153,6 +165,7 @@ checkin.go         每日签到调度
 admin.go           管理 API 与 cookie 会话
 proxy.go           内置分档位反代监听
 web/               零依赖控制台（index.html / style.css / app.js）
+deploy/            快速部署（compose + .env.example + README，不含源码）
 ```
 
 ## 安全说明

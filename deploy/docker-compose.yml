@@ -1,0 +1,50 @@
+# 快速部署：只拉取已发布镜像，不在本目录构建任何东西。
+#
+#   cp .env.example .env     # 填入管理密码与状态加密密钥
+#   docker compose up -d
+#
+# 控制台：http://主机:8317
+
+services:
+  relay:
+    image: ${QODER_IMAGE:-painwind/qoder-relay-web:latest}
+    container_name: ${QODER_NAME:-qoder-relay-web}
+    restart: unless-stopped
+    ports:
+      # 管理控制台 + 通用 /v1 网关
+      - "${QODER_PORT:-8317}:8317"
+      # 内置反代：在设置页开启后才会监听，未开启时这两个端口无响应
+      - "${QODER_PORT_CN:-7891}:7891"
+      - "${QODER_PORT_INTL:-7892}:7892"
+    environment:
+      RELAY_ADMIN_PASSWORD: ${RELAY_ADMIN_PASSWORD:?请在 .env 中设置 RELAY_ADMIN_PASSWORD}
+      RELAY_MASTER_KEY: ${RELAY_MASTER_KEY:?请先运行 docker run --rm ${QODER_IMAGE:-painwind/qoder-relay-web:latest} keygen 生成 RELAY_MASTER_KEY}
+      RELAY_DEFAULT_EDITION: ${RELAY_DEFAULT_EDITION:-domestic}
+      RELAY_CHECKIN_ENABLED: ${RELAY_CHECKIN_ENABLED:-true}
+      RELAY_CHECKIN_HOUR: ${RELAY_CHECKIN_HOUR:-8}
+      RELAY_CHECKIN_MINUTE: ${RELAY_CHECKIN_MINUTE:-30}
+      RELAY_SECURE_COOKIE: ${RELAY_SECURE_COOKIE:-false}
+      # 国际版签到需要真实桌面端机器身份，容器内无法自动获取，只能手工提供
+      QODER_MACHINE_TOKEN: ${QODER_MACHINE_TOKEN:-}
+      QODER_MACHINE_TYPE: ${QODER_MACHINE_TYPE:-}
+      QODER_MACHINE_CODE: ${QODER_MACHINE_CODE:-}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      # 命名卷由镜像初始化，属主自动为容器内的 relay(10001)；
+      # 改成宿主机目录时需先 chown -R 10001:10001 <目录>
+      - qoder-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8317/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+volumes:
+  qoder-data:
+    name: ${QODER_VOLUME:-qoder-relay-data}

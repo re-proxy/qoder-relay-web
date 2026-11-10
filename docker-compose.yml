@@ -6,10 +6,10 @@ services:
     restart: unless-stopped
     ports:
       # 主监听：管理控制台 + 通用 /v1 网关
-      - "8317:8317"
+      - "${QODER_PORT:-8317}:8317"
       # 内置反代（在设置页开启后生效）
-      - "7891:7891"
-      - "7892:7892"
+      - "${QODER_PORT_CN:-7891}:7891"
+      - "${QODER_PORT_INTL:-7892}:7892"
     environment:
       RELAY_ADMIN_PASSWORD: ${RELAY_ADMIN_PASSWORD:?请在 .env 中设置管理密码}
       RELAY_MASTER_KEY: ${RELAY_MASTER_KEY:?请用 docker run --rm qoder-relay-web keygen 生成后填入 .env}
@@ -18,12 +18,22 @@ services:
       RELAY_CHECKIN_HOUR: ${RELAY_CHECKIN_HOUR:-8}
       RELAY_CHECKIN_MINUTE: ${RELAY_CHECKIN_MINUTE:-30}
       RELAY_SECURE_COOKIE: ${RELAY_SECURE_COOKIE:-false}
+      # 国际版签到需要真实桌面端机器身份，容器内无法自动获取
+      QODER_MACHINE_TOKEN: ${QODER_MACHINE_TOKEN:-}
+      QODER_MACHINE_TYPE: ${QODER_MACHINE_TYPE:-}
+      QODER_MACHINE_CODE: ${QODER_MACHINE_CODE:-}
       TZ: ${TZ:-Asia/Shanghai}
     volumes:
-      - ./data:/data
+      # 命名卷由镜像初始化，属主自动为容器内的 relay(10001)；
+      # 改用宿主机目录时需先 chown -R 10001:10001 <目录>
+      - qoder-data:/data
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8317/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 5s
+
+volumes:
+  qoder-data:
+    name: qoder-relay-data
