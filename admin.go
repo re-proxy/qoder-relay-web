@@ -337,7 +337,7 @@ func (a *App) adminState(w http.ResponseWriter, r *http.Request) {
 			"name":         k.Name,
 			"enabled":      k.Enabled,
 			"created":      k.Created,
-			"suffix":       suffix(k.Secret),
+			"secret":       k.Secret,
 			"calls":        k.Calls,
 			"last_used_at": k.LastUsedAt,
 		})
@@ -394,13 +394,6 @@ func editionOptions() []map[string]string {
 		out = append(out, map[string]string{"value": ed.Value, "label": ed.Label})
 	}
 	return out
-}
-
-func suffix(s string) string {
-	if len(s) < 6 {
-		return ""
-	}
-	return s[len(s)-6:]
 }
 
 // adminAccount 处理账号的增删改与启停。

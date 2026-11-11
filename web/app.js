@@ -98,6 +98,15 @@ async function guard(fn) {
 
 /* ---------------- 格式化 ---------------- */
 
+function copyText(text) {
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { notice("已复制到剪贴板"); }, function () { notice("复制失败，请手动选中", true); });
+    return;
+  }
+  notice("当前浏览器不支持自动复制，请手动选中", true);
+}
+
 function fmtTime(ms) {
   if (!ms) return "—";
   const d = new Date(ms);
@@ -625,7 +634,7 @@ function keysPage() {
   const wrap = el("div");
   const keys = (S.data && S.data.keys) || [];
 
-  wrap.appendChild(pageHead("API 密钥", "客户端用 Bearer 或 X-API-Key 携带；创建后密钥只显示一次。", [
+  wrap.appendChild(pageHead("API 密钥", "客户端用 Bearer 或 X-API-Key 携带；完整密钥见下表，请勿外泄。", [
     button("新建密钥", function () {
       const name = prompt("密钥名称", "默认密钥");
       if (name === null) return;
@@ -633,8 +642,8 @@ function keysPage() {
         const res = await api("/admin/key", { action: "create", name: name });
         await load();
         render();
-        notice("新密钥：" + res.key.secret);
-        if (navigator.clipboard) navigator.clipboard.writeText(res.key.secret).catch(function () {});
+        notice("新密钥已创建：" + name);
+        copyText(res.key.secret);
       });
     }, "primary"),
     button("刷新", function () { refresh(); }, "ghost")
@@ -652,7 +661,7 @@ function keysPage() {
   const table = el("table");
   const thead = el("thead");
   const hr = el("tr");
-  ["名称", "指纹", "调用次数", "最近使用", "状态", "操作"].forEach(function (t) { hr.appendChild(el("th", t)); });
+  ["名称", "密钥", "调用次数", "最近使用", "状态", "操作"].forEach(function (t) { hr.appendChild(el("th", t)); });
   thead.appendChild(hr);
   table.appendChild(thead);
 
@@ -660,8 +669,11 @@ function keysPage() {
   keys.forEach(function (k) {
     const tr = el("tr");
     tr.appendChild(el("td", k.name));
-    const fp = el("td");
-    fp.appendChild(el("code", "…" + k.suffix));
+    const fp = el("td", null, "keycell");
+    fp.appendChild(el("code", k.secret || ""));
+    fp.appendChild(button("复制", function () {
+      copyText(k.secret || "");
+    }, "tiny ghost"));
     tr.appendChild(fp);
     const calls = el("td", fmtNum(k.calls || 0), "num");
     tr.appendChild(calls);

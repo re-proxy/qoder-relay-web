@@ -343,6 +343,24 @@ tbody tr:hover td { background: #111c26; }
 td.num { font-variant-numeric: tabular-nums; text-align: right; }
 td.actions { text-align: right; white-space: nowrap; }
 
+/* 密钥列：完整密钥 + 复制按钮 */
+td.keycell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+td.keycell code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  user-select: all;
+}
+
+td.keycell button { flex: 0 0 auto; }
+
 /* ---- 卡片 ---- */
 .card {
   border: 1px solid var(--line-soft);
